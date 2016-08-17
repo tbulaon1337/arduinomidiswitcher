@@ -5,7 +5,7 @@ I understand the struggle. Having to decide whether or not to shell out $400 for
 
 So here it is. My magnum opum. I present to the guitar/bass/keys/music community the OPEN SOURCE Arduino Midi Switcher. It is my hope that by releasing the code that more talented people will add features that I could never add and take it further then I ever could. 
 
-Please go through the BOM (Bill Of Materials) to find out what you need and have a look at the wiring diagram to find out what you need. 
+Please go through the BOM (Bill Of Materials) to find out what you need and have a look at the wiring diagram to find out how to wire everything up
 
 In order to ensure that my code will upload to your chosen Arduino platform please head over to https://www.arduino.cc/en/Main/Software and download the latest version. 
 
