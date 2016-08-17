@@ -29,7 +29,7 @@ DONATE:
 If you love my code and feel like its changed your life and want to donate firstly
 - Thank you very much! 
 - All proceeds will go into the development and add more features and help me out with daily living expenses (hey at least I'm honest) 
-
+<html>
 <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
 <input type="hidden" name="cmd" value="_donations">
 <input type="hidden" name="business" value="susakekun12@gmail.com">
@@ -41,4 +41,4 @@ If you love my code and feel like its changed your life and want to donate first
 <input type="image" src="https://www.paypalobjects.com/en_AU/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal – The safer, easier way to pay online!">
 <img alt="" border="0" src="https://www.paypalobjects.com/en_AU/i/scr/pixel.gif" width="1" height="1">
 </form>
-
+</html>
