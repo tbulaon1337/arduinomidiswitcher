@@ -29,16 +29,5 @@ DONATE:
 If you love my code and feel like its changed your life and want to donate firstly
 - Thank you very much! 
 - All proceeds will go into the development and add more features and help me out with daily living expenses (hey at least I'm honest) 
-<html>
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-<input type="hidden" name="cmd" value="_donations">
-<input type="hidden" name="business" value="susakekun12@gmail.com">
-<input type="hidden" name="lc" value="AU">
-<input type="hidden" name="item_name" value="Arduino Midi Switcher">
-<input type="hidden" name="no_note" value="0">
-<input type="hidden" name="currency_code" value="AUD">
-<input type="hidden" name="bn" value="PP-DonationsBF:btn_donateCC_LG.gif:NonHostedGuest">
-<input type="image" src="https://www.paypalobjects.com/en_AU/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal – The safer, easier way to pay online!">
-<img alt="" border="0" src="https://www.paypalobjects.com/en_AU/i/scr/pixel.gif" width="1" height="1">
-</form>
-</html>
+- My paypal address for donations is susakekun12@gmail.com 
+- If you would like to send donations via bit coins my address is 1MwvW6F2SygjP2QqQ2r7Rrjgv1DJHFMuYF
