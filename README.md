@@ -13,6 +13,7 @@ Also please ensure that you have downloaded and installed the midi library onto 
 https://www.arduinomidilib.fortyseveneffects.com
 
 Updates
+
 Version 1.0 delyk SOURCE CODE
 - Uses one RGB Led rather then 4 individual LEDs
 - 4 Banks, 6 Presets per bank
