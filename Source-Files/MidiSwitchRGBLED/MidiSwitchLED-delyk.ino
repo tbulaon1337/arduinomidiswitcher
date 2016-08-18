@@ -20,6 +20,8 @@
 //You should have received a copy of the GNU General Public License
 //along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+//Shout outs to delyk for the updated code! 
+
 //DON'T FORGET! Sketch -> Include Library -> MIDI
 #include <MIDI.h>
 #include <midi_Defs.h>
