@@ -1,38 +1,165 @@
-# arduinomidiswitcher
-Repository for the Arduino Midi Switcher
+rduino Mega MIDI Loop Switcher (Open Source)
 
-I understand the struggle. Having to decide whether or not to shell out $400 for a midi switcher or pay off the months bills. I spent weeks trawling the internet for a how-to on building your own midi switcher. This is not to say that there wasn't anything out there, its just that there wasn't anything that was clear, concise and easy to follow. So I decided in the middle of July to make one myself. 
+This project is an open-source Arduino Mega 2560–based MIDI loop switcher designed for guitar and bass rigs that need predictable, preset-driven control with optional stompbox-style flexibility.
 
-So here it is. My magnum opum. I present to the guitar/bass/keys/music community the OPEN SOURCE Arduino Midi Switcher. It is my hope that by releasing the code that more talented people will add features that I could never add and take it further then I ever could. 
+It combines:
 
-Please go through the BOM (Bill Of Materials) to find out what you need and have a look at the wiring diagram to find out how to wire everything up
+true-bypass relay switching,
 
-In order to ensure that my code will upload to your chosen Arduino platform please head over to https://www.arduino.cc/en/Main/Software and download the latest version. 
+per-preset MIDI control,
 
-Also please ensure that you have downloaded and installed the midi library onto the Arduino IDE located here:
-https://www.arduinomidilib.fortyseveneffects.com
+stompbox and preset modes,
 
-Updates
+MIDI clock sync via tap tempo,
 
-Version 1.0 delyk SOURCE CODE
-- Uses one RGB Led rather then 4 individual LEDs
-- 4 Banks, 6 Presets per bank
-- Up and Down bank footswitches (unlike vanila which has one to scroll through 4)
+and a hardware-first UI.
 
-Version 1.0 VANILLA SOURCE CODE
-- 4 Banks, 7 Presets per bank
-- Sending Program Changes from 0-26
-- Currently sending on Midi Channel 1
+The design goal is simple:
+nothing changes unless you press something.
 
-FUTURE UPDATES
-- Bank LED + 16 Character Crystal LCD Display
-- Midi Clock Send with Tap Tempo and BPM read out <- will need some help with this as this is beyond me
-- Relay Bypass Switching 
-- Real Time Patch Editing -> at the moment if you need to change the banks and sends you need to plug the arduino into a PC and make changes VIA arduino IDE. Real time patch editing would be MASSIVE as it would mean that people with no programming experience can just upload the code and get going. 
+This project is intentionally scoped for the Arduino Mega 2560 due to I/O count, memory headroom, and predictable timing.
 
-DONATE: 
-If you love my code and feel like its changed your life and want to donate firstly
-- Thank you very much! 
-- All proceeds will go into the development and add more features and help me out with daily living expenses (hey at least I'm honest) 
-- My paypal address for donations is susakekun12@gmail.com 
-- If you would like to send donations via bit coins my address is 1MwvW6F2SygjP2QqQ2r7Rrjgv1DJHFMuYF
+Current Features
+Core Switching
+
+3–5 true-bypass relay loops (configurable in code)
+
+Relay control via ULN2803A
+
+Optional relay output for amp channel switching
+
+MIDI
+
+MIDI Program Change (PC)
+
+MIDI Control Change (CC)
+
+Per-preset MIDI channel assignment
+
+MIDI clock sync OUT
+
+Tap tempo generates MIDI clock
+
+MIDI OUT only (no MIDI IN)
+
+Presets & Banks
+
+Preset-based architecture (relay states + MIDI data)
+
+Unlimited banks (EEPROM-limited)
+
+Each bank holds multiple presets
+
+Preset changes occur only on footswitch press
+
+Bank navigation does not trigger MIDI or relay changes
+
+Stompbox Mode
+
+Stompbox mode can be enabled per preset
+
+Individual loops can be toggled on/off like traditional pedals
+
+Preset defines:
+
+which loops are active
+
+whether the preset behaves as a “fixed scene” or a stompbox-style layout
+
+No global mode switching required
+
+User Interface
+
+SSD1306 OLED display
+
+Rotary encoder with push button
+
+Dedicated navigation buttons
+
+On-device menu system for:
+
+preset editing
+
+MIDI settings
+
+stompbox configuration
+
+expression calibration
+
+Footswitching
+
+Multiple footswitches for preset selection and loop control
+
+Bank up / bank down switches
+
+Debounced, state-safe logic
+
+No background state mutation
+
+Expression / Control
+
+Expression pedal input (ADC)
+
+Assignable CC output
+
+Heel/toe calibration stored in config
+
+Optional global default EXP CC
+
+Bill of Materials (Core)
+
+Controller & Logic
+
+Arduino Mega 2560
+
+ULN2803A Darlington array
+
+Logic ICs as required (74HC series)
+
+Display & UI
+
+SSD1306 128×64 OLED (I2C)
+
+Rotary encoder with push button
+
+Tactile push buttons
+
+Momentary footswitches (soft-touch)
+
+Switching
+
+Signal relays (e.g. Omron G6K-2 or equivalent)
+
+Power
+
+9V DC input
+
+Buck converter (9V → 5V)
+
+Power filtering:
+
+220µF electrolytic capacitor
+
+0.1µF ceramic decoupling capacitors
+
+I/O
+
+¼″ mono jacks (loops, amp switching)
+
+MIDI OUT (5-pin DIN or TRS MIDI)
+
+Expression pedal jack (TRS)
+
+Indicators
+
+LEDs + current-limiting resistors
+
+Misc
+
+Enclosure (Hammond / equivalent)
+
+Stripboard or custom PCB
+
+Wire, headers, standoffs, hardware
+
+LEGACY CODE FOR OLD ARDUINO BASED MIDI SWITCHER WILL BE LABELED AS LEGACY.
