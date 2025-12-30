@@ -1,0 +1,288 @@
+/*
+  Arduino MIDI Controller v2.0
+  Originally inspired by my v1.0 (16/08/2016) — rewritten in a cleaner, safer way.
+
+  Written by Timothy Bulaon (v2.0 rewrite with modern best-practice structure)
+
+  ---------------------------------------------------------------------------
+  WHAT THIS DOES
+  - 7 footswitches = 7 presets
+  - 1 bank switch = cycles through 4 banks
+  - 4 LEDs = show which bank you’re in
+  - Total presets = 7 presets per bank × 4 banks = 28 presets
+  - Each preset sends a MIDI Program Change (PC) message
+
+  ---------------------------------------------------------------------------
+  WHY THIS VERSION IS BETTER THAN v1.0
+  v1.0 worked (and I’m still proud of that), but it used delay() for debounce and
+  repeated the same code blocks a lot.
+
+  v2.0 upgrades:
+  1) INPUT_PULLUP wiring:
+     - Makes switches stable (no random “ghost presses” from floating inputs)
+     - Also means "pressed" reads as LOW, not HIGH (important!)
+
+  2) Real debounce (no delay()):
+     - delay() freezes your whole Arduino. That becomes a nightmare once you add
+       more features (OLEDs, tap tempo, relays, etc.)
+     - We use millis() timing so the code stays responsive.
+
+  3) No copy/paste switch blocks:
+     - We use arrays + a simple formula so expanding is easy and less error-prone.
+
+  ---------------------------------------------------------------------------
+  IMPORTANT WIRING NOTE (READ THIS OR YOU WILL THINK THE CODE IS BROKEN)
+  Because we use INPUT_PULLUP:
+    - Each switch should connect from the Arduino pin to GND.
+    - Do NOT connect the switch to +5V.
+    - When NOT pressed, the pin reads HIGH (pulled up internally).
+    - When pressed, the pin gets connected to GND and reads LOW.
+
+  ---------------------------------------------------------------------------
+  MIDI OUT NOTE
+  - MIDI uses the Arduino hardware serial TX pin.
+  - On many boards, TX is pin 1.
+  - So don’t use pin 1 for a switch.
+  - MIDI baud rate for classic DIN MIDI is 31250.
+
+  ---------------------------------------------------------------------------
+  LIBRARY NOTE
+  Install the FortySevenEffects MIDI library:
+  Sketch -> Include Library -> Manage Libraries -> search "MIDI Library"
+*/
+
+#include <MIDI.h>
+
+// ---------------------------------------------------------------------------
+// CONFIG SECTION (this is the first place you should edit)
+// ---------------------------------------------------------------------------
+
+// MIDI channel to send on (1–16)
+static const byte MIDI_CH = 1;
+
+// How many banks do we want?
+static const byte NUM_BANKS = 4;
+
+// How many preset switches do we want?
+// In this build it’s 7 preset switches + 1 bank switch
+static const byte NUM_PRESETS = 7;
+
+// Debounce time (milliseconds)
+// If your switches are noisy, bump this up a bit (e.g. 50)
+// If you want faster response, try 25–35
+static const unsigned long DEBOUNCE_MS = 35;
+
+// ---------------------------------------------------------------------------
+// PIN ASSIGNMENTS
+// ---------------------------------------------------------------------------
+
+// Preset footswitch pins (7 switches)
+static const byte presetPins[NUM_PRESETS] = {2, 3, 4, 5, 6, 7, 8};
+
+// Bank switch pin (cycles banks)
+static const byte bankPin = 9;
+
+// Bank LED pins (4 LEDs = 4 banks)
+static const byte bankLedPins[NUM_BANKS] = {12, 13, 14, 15};
+
+// ---------------------------------------------------------------------------
+// MIDI SETUP
+// ---------------------------------------------------------------------------
+
+// Create a MIDI output object that uses Hardware Serial (TX pin)
+MIDI_CREATE_INSTANCE(HardwareSerial, Serial, midiOut);
+
+// ---------------------------------------------------------------------------
+// STATE VARIABLES (these keep track of what’s happening over time)
+// ---------------------------------------------------------------------------
+
+// Bank is stored as 1..NUM_BANKS (humans count from 1, computers count from 0)
+// Keeping it 1-based makes the LED logic easier to understand.
+byte bank = 1;
+
+// For each preset switch we track debounce information.
+// Why? Because we don’t want one press to register as 6 presses due to switch bounce.
+bool presetStablePressed[NUM_PRESETS];           // the confirmed “stable” pressed/not pressed state
+bool presetLastRawPressed[NUM_PRESETS];          // the last raw reading we saw
+unsigned long presetLastChangeMs[NUM_PRESETS];   // when the raw reading last changed
+
+// Same debounce tracking for the bank switch
+bool bankStablePressed;
+bool bankLastRawPressed;
+unsigned long bankLastChangeMs;
+
+// ---------------------------------------------------------------------------
+// HELPER FUNCTIONS (small chunks of logic so loop() stays readable)
+// ---------------------------------------------------------------------------
+
+/*
+  With INPUT_PULLUP:
+  - NOT pressed = HIGH
+  - Pressed = LOW
+
+  So we convert that into a nice true/false:
+  true  = pressed
+  false = not pressed
+*/
+static inline bool isPressedRaw(byte pin) {
+  return (digitalRead(pin) == LOW);
+}
+
+/*
+  Update the bank LEDs so only the current bank LED is ON.
+  Example:
+    bank = 1 -> LED1 on, others off
+    bank = 3 -> LED3 on, others off
+*/
+void setBankLeds(byte currentBank) {
+  for (byte i = 0; i < NUM_BANKS; i++) {
+    // i is 0-based, bank is 1-based, so currentBank-1 matches i
+    digitalWrite(bankLedPins[i], (i == (currentBank - 1)) ? HIGH : LOW);
+  }
+}
+
+/*
+  Send the MIDI Program Change for a preset.
+  presetIndex0 is 0-based:
+    switch 1 -> index 0
+    switch 7 -> index 6
+
+  Mapping is exactly the same as v1.0:
+    Bank 1: PC 0..6
+    Bank 2: PC 7..13
+    Bank 3: PC 14..20
+    Bank 4: PC 21..27
+
+  Which is just:
+    PC = presetIndex0 + (bank-1)*NUM_PRESETS
+*/
+void sendPresetPC(byte presetIndex0) {
+  const byte pc = presetIndex0 + (bank - 1) * NUM_PRESETS;
+  midiOut.sendProgramChange(pc, MIDI_CH);
+}
+
+/*
+  Debounce logic:
+  We only want ONE event when a switch is pressed.
+
+  This function returns true only when:
+  - the button transitions from NOT pressed -> pressed
+  - and that change has been stable for DEBOUNCE_MS
+
+  This is the “no delay(), still reliable” way.
+*/
+bool debouncePressEvent(
+  bool rawPressed,
+  bool &stablePressed,
+  bool &lastRawPressed,
+  unsigned long &lastChangeMs
+) {
+  const unsigned long now = millis();
+
+  // If the raw reading changed, reset our debounce timer
+  if (rawPressed != lastRawPressed) {
+    lastRawPressed = rawPressed;
+    lastChangeMs = now;
+  }
+
+  // If the raw reading has stayed the same long enough, accept it as stable
+  if ((now - lastChangeMs) >= DEBOUNCE_MS) {
+    // Only react if the stable state is changing
+    if (stablePressed != lastRawPressed) {
+      stablePressed = lastRawPressed;
+
+      // We only care about the "press" moment (stable becomes pressed)
+      if (stablePressed == true) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// SETUP (runs once when the Arduino boots)
+// ---------------------------------------------------------------------------
+
+void setup() {
+  // Start MIDI serial at the classic MIDI baud rate
+  Serial.begin(31250);
+
+  // Begin the MIDI library (we’re only sending, but begin() is still good practice)
+  midiOut.begin(MIDI_CHANNEL_OMNI);
+
+  // ---------------------------
+  // Setup preset switches
+  // ---------------------------
+  for (byte i = 0; i < NUM_PRESETS; i++) {
+    pinMode(presetPins[i], INPUT_PULLUP);
+
+    // Initialise debounce state so we don’t get a false trigger on boot
+    const bool raw = isPressedRaw(presetPins[i]);
+    presetStablePressed[i] = raw;
+    presetLastRawPressed[i] = raw;
+    presetLastChangeMs[i] = millis();
+  }
+
+  // ---------------------------
+  // Setup bank switch
+  // ---------------------------
+  pinMode(bankPin, INPUT_PULLUP);
+  {
+    const bool raw = isPressedRaw(bankPin);
+    bankStablePressed = raw;
+    bankLastRawPressed = raw;
+    bankLastChangeMs = millis();
+  }
+
+  // ---------------------------
+  // Setup bank LEDs
+  // ---------------------------
+  for (byte i = 0; i < NUM_BANKS; i++) {
+    pinMode(bankLedPins[i], OUTPUT);
+    digitalWrite(bankLedPins[i], LOW);
+  }
+
+  // Turn on the correct LED for the starting bank
+  setBankLeds(bank);
+}
+
+// ---------------------------------------------------------------------------
+// LOOP (runs forever)
+// ---------------------------------------------------------------------------
+
+void loop() {
+  // ---------------------------
+  // 1) Handle bank switch presses
+  // ---------------------------
+  const bool bankRaw = isPressedRaw(bankPin);
+
+  // If we get a clean press event, move to the next bank
+  if (debouncePressEvent(bankRaw, bankStablePressed, bankLastRawPressed, bankLastChangeMs)) {
+    bank++;
+
+    // Wrap around: 4 -> 1
+    if (bank > NUM_BANKS) {
+      bank = 1;
+    }
+
+    // Update LEDs so the new bank shows
+    setBankLeds(bank);
+  }
+
+  // ---------------------------
+  // 2) Handle preset switch presses
+  // ---------------------------
+  for (byte i = 0; i < NUM_PRESETS; i++) {
+    const bool raw = isPressedRaw(presetPins[i]);
+
+    // If this switch was cleanly pressed, send MIDI PC
+    if (debouncePressEvent(raw, presetStablePressed[i], presetLastRawPressed[i], presetLastChangeMs[i])) {
+      sendPresetPC(i);
+    }
+  }
+
+  // No delay() here!
+  // loop() runs fast and stays responsive.
+}
