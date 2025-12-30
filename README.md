@@ -1,4 +1,4 @@
-rduino Mega MIDI Loop Switcher (Open Source)
+Arduino Mega MIDI Loop Switcher (Open Source)
 
 This project is an open-source Arduino Mega 2560–based MIDI loop switcher designed for guitar and bass rigs that need predictable, preset-driven control with optional stompbox-style flexibility.
 
